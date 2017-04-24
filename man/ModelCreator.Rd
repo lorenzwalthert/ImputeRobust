@@ -28,4 +28,3 @@ This is a helper function to be used within the gamlss
   the one in the first column and the rest are treated as
   independent.
 }
-

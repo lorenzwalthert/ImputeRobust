@@ -1,10 +1,10 @@
 #' GAMLSS imputation fit
 #'
 #' @description
-#' This function takes a data set to fit a gamlss model and
+#' This function takes uses a data set to fit a gamlss model and
 #' another to predict the expected parameters values. It returns a
 #' function that will generate a vector of random observations for the
-#' predicted parameters. The amount of random observations is the
+#' predicted parameters. The amount of random obervations is the
 #' number of units on the dataset used to get such predictions.
 #'
 #' @param data Completely observed data frame to be used to fit a
@@ -21,13 +21,17 @@
 #' @param forceNormal Flag that if set to 'TRUE' will use a normal
 #'   family for the gamlss estimation as a last resource.
 #' @param trace whether to print at each iteration (TRUE) or not (FALSE)
+#' @param form_int either a list with the objects \code{formula},
+#'   \code{sigma.formula}, \code{nu.formula} and \code{tau.formula} or just one
+#'   string that will be passed to \code{forula}, the other parameters will 
+#'   be determined internally. 
 #' @param ... extra arguments for the control of the gamlss fitting
 #'   function
 #'
 #' @return Returns a method to generate random samples for the fitted
 #'   gamlss model using "new.data" as covariates.
 ImpGamlssFit <- function(data, new.data, family, n.ind.par, lin.terms = NULL,
-                         forceNormal = FALSE, trace = FALSE, ...) {
+                         forceNormal = FALSE, trace = FALSE, form_int, ...) {
 
   # Family last will be the distribution family of the last fitted
   # gamlss model if forceNormal is TRUE, a normal distribution is
@@ -54,40 +58,63 @@ ImpGamlssFit <- function(data, new.data, family, n.ind.par, lin.terms = NULL,
   tau.f0 <- switch(n.ind.par, ~1, ~1, ~1, mu.f0)
   tau.lin <- switch(n.ind.par, ~1, ~1, ~1, mu.lin)
 
+  if (length(formu_int == 1)) {
+    user_mu.f1 <- form_int
+    user_sigma.f1 <- sigma.f1
+    user_nu.formula = nu.f1
+    user_tau.formula = tau.f1
+  } else {
+    user_mu.f1 <- form_int$formula
+    user_sigma.f1 <- form_int$sigma.formula
+    user_nu.formula = form_int$nu.f1
+    user_tau.formula <- form_int$tau.formula
+  }
   tryCatch(
   {
     # Fit gamlss model with given formula for all four moments
     # (ignored if not needed) and the given distribution family
     fit <- tryCatch(
-      gamlss(formula = mu.f1,
-             sigma.formula = sigma.f1,
-             nu.formula = nu.f1,
-             tau.formula = tau.f1,
+      gamlss(formula = user_mu.f1,
+             sigma.formula = user_sigma.f1,
+             nu.formula = user_nu.f1,
+             tau.formula = user_tau.f1,
              family = family,
              data = data,
              control = gamlss.control(trace = trace , ...),
              i.control = glim.control(...)),
-      error = function(e) {
+      error = function(e) { 
         tryCatch(
-        {
-          gamlss(formula = mu.f0,
-                 sigma.formula = sigma.f0,
-                 nu.formula = nu.f0,
-                 tau.formula = tau.f0,
-                 family = family,
-                 data = data,
-                 control = gamlss.control(trace = trace , ...),
-                 i.control = glim.control(...))
-        },
+        gamlss(formula = mu.f1,
+               sigma.formula = sigma.f1,
+               nu.formula = nu.f1,
+               tau.formula = tau.f1,
+               family = family,
+               data = data,
+               control = gamlss.control(trace = trace , ...),
+               i.control = glim.control(...)),
         error = function(e) {
-          gamlss(formula = mu.lin,
-                 sigma.formula = sigma.lin,
-                 nu.formula = nu.lin,
-                 tau.formula = tau.lin,
-                 family = family.last,
-                 data = data,
-                 control = gamlss.control(trace = trace , ...),
-                 i.control = glim.control(...))
+          tryCatch(
+          {
+            gamlss(formula = mu.f0,
+                   sigma.formula = sigma.f0,
+                   nu.formula = nu.f0,
+                   tau.formula = tau.f0,
+                   family = family,
+                   data = data,
+                   control = gamlss.control(trace = trace , ...),
+                   i.control = glim.control(...))
+          },
+          error = function(e) {
+            gamlss(formula = mu.lin,
+                   sigma.formula = sigma.lin,
+                   nu.formula = nu.lin,
+                   tau.formula = tau.lin,
+                   family = family.last,
+                   data = data,
+                   control = gamlss.control(trace = trace , ...),
+                   i.control = glim.control(...))
+          }
+          )
         }
         )
       }
@@ -96,7 +123,7 @@ ImpGamlssFit <- function(data, new.data, family, n.ind.par, lin.terms = NULL,
     # Predict the parameters values for the units with missings
     capture.output(predictions <- predictAll(fit, new.data, type="response",
                                              data = data),
-                   file = NULL)
+                   file = "/dev/null")
 
     # Return wrapper that will call the generation function
     # corresponding to the distribution family of the gamlss

@@ -5,7 +5,7 @@
 \title{GAMLSS imputation fit}
 \usage{
 ImpGamlssFit(data, new.data, family, n.ind.par, lin.terms = NULL,
-  forceNormal = FALSE, trace = FALSE, ...)
+  forceNormal = FALSE, trace = FALSE, form_int, ...)
 }
 \arguments{
 \item{data}{Completely observed data frame to be used to fit a
@@ -29,6 +29,11 @@ family for the gamlss estimation as a last resource.}
 
 \item{trace}{whether to print at each iteration (TRUE) or not (FALSE)}
 
+\item{form_int}{either a list with the objects \code{formula},
+\code{sigma.formula}, \code{nu.formula} and \code{tau.formula} or just one
+string that will be passed to \code{forula}, the other parameters will 
+be determined internally.}
+
 \item{...}{extra arguments for the control of the gamlss fitting
 function}
 }
@@ -37,9 +42,9 @@ Returns a method to generate random samples for the fitted
   gamlss model using "new.data" as covariates.
 }
 \description{
-This function takes a data set to fit a gamlss model and
+This function takes uses a data set to fit a gamlss model and
 another to predict the expected parameters values. It returns a
 function that will generate a vector of random observations for the
-predicted parameters. The amount of random observations is the
+predicted parameters. The amount of random obervations is the
 number of units on the dataset used to get such predictions.
 }
