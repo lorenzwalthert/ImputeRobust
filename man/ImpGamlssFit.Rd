@@ -5,7 +5,7 @@
 \title{GAMLSS imputation fit}
 \usage{
 ImpGamlssFit(data, new.data, family, n.ind.par, lin.terms = NULL,
-  forceNormal = FALSE, trace = FALSE, form_int, ...)
+  forceNormal = FALSE, trace = FALSE, form_int, prefit_gam = TRUE, ...)
 }
 \arguments{
 \item{data}{Completely observed data frame to be used to fit a
@@ -33,6 +33,9 @@ family for the gamlss estimation as a last resource.}
 \code{sigma.formula}, \code{nu.formula} and \code{tau.formula} or just one
 string that will be passed to \code{forula}, the other parameters will 
 be determined internally.}
+
+\item{prefit_gam}{Whether or not to fit a gam first and extract degrees of 
+freedom to provide a starting point for gamlss.}
 
 \item{...}{extra arguments for the control of the gamlss fitting
 function}

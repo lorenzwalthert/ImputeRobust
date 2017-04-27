@@ -25,13 +25,16 @@
 #'   \code{sigma.formula}, \code{nu.formula} and \code{tau.formula} or just one
 #'   string that will be passed to \code{forula}, the other parameters will 
 #'   be determined internally. 
+#' @param prefit_gam Whether or not to fit a gam first and extract degrees of 
+#'   freedom to provide a starting point for gamlss.
 #' @param ... extra arguments for the control of the gamlss fitting
 #'   function
 #'
 #' @return Returns a method to generate random samples for the fitted
 #'   gamlss model using "new.data" as covariates.
 ImpGamlssFit <- function(data, new.data, family, n.ind.par, lin.terms = NULL,
-                         forceNormal = FALSE, trace = FALSE, form_int, ...) {
+                         forceNormal = FALSE, trace = FALSE, form_int, 
+                         prefit_gam = TRUE, ...) {
 
   # Family last will be the distribution family of the last fitted
   # gamlss model if forceNormal is TRUE, a normal distribution is
@@ -58,16 +61,29 @@ ImpGamlssFit <- function(data, new.data, family, n.ind.par, lin.terms = NULL,
   tau.f0 <- switch(n.ind.par, ~1, ~1, ~1, mu.f0)
   tau.lin <- switch(n.ind.par, ~1, ~1, ~1, mu.lin)
 
-  if (length(formu_int == 1)) {
-    user_mu.f1 <- form_int
-    user_sigma.f1 <- sigma.f1
-    user_nu.formula = nu.f1
-    user_tau.formula = tau.f1
-  } else {
-    user_mu.f1 <- form_int$formula
-    user_sigma.f1 <- form_int$sigma.formula
-    user_nu.formula = form_int$nu.f1
-    user_tau.formula <- form_int$tau.formula
+  # allow user-specified formula
+  if (!is.null(form_int)) {
+    if (length(form_int == 1)) {
+      user_mu.f1 <- form_int
+      user_sigma.f1 <- sigma.f1
+      user_nu.formula = nu.f1
+      user_tau.formula = tau.f1
+    } else {
+      user_mu.f1 <- form_int$formula
+      user_sigma.f1 <- form_int$sigma.formula
+      user_nu.formula = form_int$nu.f1
+      user_tau.formula <- form_int$tau.formula
+    }
+    
+    if (!is.null(prefit_gam)) {
+      message(paste0("prefitting gam", user_mu.f1, "\n"))
+      browser()
+      # fit the gam model in advance and derive formula via edf
+      fit <- gam(as.formula(user_mu.f1), family = prefit_gam$family, data = data)
+      user_mu.f1 <- extract_formula(fit, response = "y")
+      cat("\n the gam formula is", user_mu.f1, "\n")
+    }
+    
   }
   tryCatch(
   {
